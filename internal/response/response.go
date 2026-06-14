@@ -92,11 +92,11 @@ func WriteStatusLine(w io.Writer, statusCode StatusCode) error {
 }
 
 func GetDefaultHeaders(contentLen int) headers.Headers {
-	h := make(headers.Headers)
+	h := headers.NewHeaders()
 
-	h["Content-Length"] = fmt.Sprintf("%d", contentLen)
-	h["Connection"] = "close"
-	h["Content-Type"] = "text/plain"
+	h.Set("Content-Length", fmt.Sprintf("%d", contentLen))
+	h.Set("Connection", "close")
+	h.Set("Content-Type", "text/plain")
 
 	return h
 }

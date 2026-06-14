@@ -45,23 +45,29 @@ const port = 42069
 func main() {
 	handler := func(w *response.Writer, req *request.Request) *server.HandlerError {
 
-		var body string
-		var status response.StatusCode
-
-		if req == nil {
-			status = response.StatusBadRequest
-			body = badRequestHTML
-		} else {
-			status = response.StatusOK
-			body = successHTML
-		}
-
+		body := successHTML
 		headers := response.GetDefaultHeaders(len(body))
+
 		headers.Set("Content-Type", "text/html")
 
-		w.WriteStatusLine(status)
-		w.WriteHeaders(headers)
-		w.WriteBody([]byte(body))
+		if err := w.WriteStatusLine((response.StatusOK)); err != nil {
+			return &server.HandlerError{
+				StatusCode: response.StatusInternalServerError,
+				Message:    internalErrorHTML,
+			}
+		}
+		if err := w.WriteHeaders((headers)); err != nil {
+			return &server.HandlerError{
+				StatusCode: response.StatusInternalServerError,
+				Message:    internalErrorHTML,
+			}
+		}
+		if _, err := w.WriteBody([]byte(body)); err != nil {
+			return &server.HandlerError{
+				StatusCode: response.StatusInternalServerError,
+				Message:    internalErrorHTML,
+			}
+		}
 
 		return nil
 	}

@@ -23,6 +23,8 @@ func WriteError(w io.Writer, handlerErr *HandlerError) error {
 
 	// Headers
 	headers := response.GetDefaultHeaders(len(body))
+	headers.Set("Content-Type", "text/html")
+
 	if err := response.WriteHeaders(w, headers); err != nil {
 		return err
 	}

@@ -50,8 +50,6 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 		n, err := reader.Read(buf[readToIndex:])
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				// The connection closed, but our state machine isn't done yet!
-				// This means the client disconnected early.
 				return nil, io.ErrUnexpectedEOF
 			}
 			return nil, fmt.Errorf("failed to read request: %w", err)

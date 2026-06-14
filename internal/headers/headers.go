@@ -15,6 +15,9 @@ func NewHeaders() Headers {
 func (h Headers) Get(key string) string {
 	return h[strings.ToLower(key)]
 }
+func (h Headers) Set(key, value string) {
+	h[key] = value
+}
 
 // Parse reads a single header line, adds it to the map, and returns bytes consumed.
 func (h Headers) Parse(data []byte) (int, bool, error) {

@@ -113,3 +113,39 @@ func WriteHeaders(w io.Writer, h headers.Headers) error {
 	_, err := w.Write([]byte("\r\n"))
 	return err
 }
+
+func (rw *Writer) WriteChunkedBody(p []byte) (int, error) {
+	if rw.state != stateBody {
+		return 0, fmt.Errorf("wrong order: body")
+	}
+
+	// 1. Write the size of the chunk in hexadecimal followed by \r\n
+	chunkSize := fmt.Sprintf("%x\r\n", len(p))
+	if _, err := rw.w.Write([]byte(chunkSize)); err != nil {
+		return 0, err
+	}
+
+	// 2. Write the actual chunk data
+	n, err := rw.w.Write(p)
+	if err != nil {
+		return n, err
+	}
+
+	// 3. Write the trailing \r\n to close the chunk
+	if _, err := rw.w.Write([]byte("\r\n")); err != nil {
+		return n, err
+	}
+
+	return n, nil
+}
+
+// WriteChunkedBodyDone writes the final 0-length chunk to signal the stream is finished.
+func (rw *Writer) WriteChunkedBodyDone() (int, error) {
+	if rw.state != stateBody {
+		return 0, fmt.Errorf("wrong order: body")
+	}
+
+	// The spec requires "0\r\n\r\n" to end the chunked transmission
+	_, err := rw.w.Write([]byte("0\r\n\r\n"))
+	return 0, err
+}

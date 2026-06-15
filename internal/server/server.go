@@ -46,6 +46,9 @@ func (s *Server) listen() {
 			fmt.Println("Error accepting connection:", err)
 			continue
 		}
+
+		fmt.Println("Connection established")
+
 		go s.handle(conn)
 	}
 }
@@ -53,7 +56,6 @@ func (s *Server) listen() {
 func (s *Server) handle(conn net.Conn) {
 	defer conn.Close()
 
-	// 1. Parse request
 	req, err := request.RequestFromReader(conn)
 	if err != nil {
 		WriteError(conn, &HandlerError{
@@ -63,10 +65,8 @@ func (s *Server) handle(conn net.Conn) {
 		return
 	}
 
-	// 2. Wrap connection (NOT buffer)
 	rw := response.NewWriter(conn)
 
-	// 3. Call handler
 	handlerErr := s.handler(rw, req)
 	if handlerErr != nil {
 		WriteError(conn, handlerErr)

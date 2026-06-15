@@ -6,7 +6,6 @@ import (
 	"io"
 )
 
-// Fake enum
 type StatusCode int
 type writerState int
 
@@ -70,7 +69,6 @@ func (rw *Writer) WriteBody(p []byte) (int, error) {
 	return rw.w.Write(p)
 }
 
-// 1. Write status line
 func WriteStatusLine(w io.Writer, statusCode StatusCode) error {
 	var reason string
 
@@ -109,7 +107,6 @@ func WriteHeaders(w io.Writer, h headers.Headers) error {
 		}
 	}
 
-	// End of headers
 	_, err := w.Write([]byte("\r\n"))
 	return err
 }
@@ -119,19 +116,16 @@ func (rw *Writer) WriteChunkedBody(p []byte) (int, error) {
 		return 0, fmt.Errorf("wrong order: body")
 	}
 
-	// 1. Write the size of the chunk in hexadecimal followed by \r\n
 	chunkSize := fmt.Sprintf("%x\r\n", len(p))
 	if _, err := rw.w.Write([]byte(chunkSize)); err != nil {
 		return 0, err
 	}
 
-	// 2. Write the actual chunk data
 	n, err := rw.w.Write(p)
 	if err != nil {
 		return n, err
 	}
 
-	// 3. Write the trailing \r\n to close the chunk
 	if _, err := rw.w.Write([]byte("\r\n")); err != nil {
 		return n, err
 	}
@@ -139,13 +133,20 @@ func (rw *Writer) WriteChunkedBody(p []byte) (int, error) {
 	return n, nil
 }
 
-// WriteChunkedBodyDone writes the final 0-length chunk to signal the stream is finished.
 func (rw *Writer) WriteChunkedBodyDone() (int, error) {
 	if rw.state != stateBody {
 		return 0, fmt.Errorf("wrong order: body")
 	}
 
-	// The spec requires "0\r\n\r\n" to end the chunked transmission
-	_, err := rw.w.Write([]byte("0\r\n\r\n"))
-	return 0, err
+	return rw.w.Write([]byte("0\r\n\r\n"))
+
+}
+
+func (rw *Writer) WriteTrailers(h headers.Headers) error {
+	if rw.state != stateBody {
+		return fmt.Errorf("wrong order: trailers")
+	}
+
+	return WriteHeaders(rw.w, h)
+
 }

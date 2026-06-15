@@ -16,12 +16,10 @@ type HandlerError struct {
 func WriteError(w io.Writer, handlerErr *HandlerError) error {
 	body := handlerErr.Message
 
-	// Status line
 	if err := response.WriteStatusLine(w, handlerErr.StatusCode); err != nil {
 		return err
 	}
 
-	// Headers
 	headers := response.GetDefaultHeaders(len(body))
 	headers.Set("Content-Type", "text/html")
 
@@ -29,7 +27,6 @@ func WriteError(w io.Writer, handlerErr *HandlerError) error {
 		return err
 	}
 
-	// Body
 	_, err := w.Write([]byte(body))
 	return err
 }

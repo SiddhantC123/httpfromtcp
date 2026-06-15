@@ -66,3 +66,74 @@ echo -e "GET /httpbin/stream/100 HTTP/1.1\r\nHost: localhost:42069\r\nConnection
 
 I actually also dropped my buffer size while debugging so that I could have more deterministic (32 byte) chunks. But I then raised it once everything was working properly.
 
+
+
+
+
+
+
+Trailers
+Did you think it was a bit odd that we had to write 0\r\n\r\n (two registered nurses) to signal the end of the chunked encoding?
+
+There's actually a good reason for it – you can have additional headers at the end of chunked encoding, called (of course) Trailers. They work the same way that headers do with one catch: you have to specify the names of the trailers in a Trailer header. For example:
+
+HTTP/1.1 200 OK
+Content-Type: text/plain
+Transfer-Encoding: chunked
+Trailer: Lane, Prime, TJ
+
+1E
+I could go for a cup of coffee
+C
+But not Java
+12
+Never go full Java
+0
+Lane: goober
+Prime: chill-guy
+TJ: 1-indexer
+
+
+They go between the two \r\n sequences in our original chunked encoding example.
+
+Why Trailers?
+Trailers are often used to send information about the message body that can't be known until the message body is fully sent. For example, the hash of the message body... in fact, let's do that.
+
+Assignment
+Add a new method to your response package that does what you'd expect based on your knowledge of trailers. I used func (w *Writer) WriteTrailers(h headers.Headers) error.
+Remember, trailers are formatted just like headers.
+
+In your proxy handler (the httpbin.org one):
+Ensure that a request to /httpbin/html on your server will proxy https://httpbin.org/html instead of the streaming endpoint we used before. We'll be using that endpoint for this assignment.
+Announce X-Content-SHA256 and X-Content-Length as trailers in the Trailer header.
+Remove the Content-Length header.
+Keep track of the full response body as you read it in chunks from the httpbin server.
+Once you're done writing the chunks, calculate the hash of the full response body using sha256.Sum256.
+Add the following headers:
+X-Content-SHA256: <hash>
+X-Content-Length: <length of raw body in bytes>
+Run your server, and debug your code with curl --raw.
+HTTP header names are case-insensitive by specification. Some servers and clients may canonicalize header names in certain ways (e.g., X-Content-Sha256), so don't be surprised if you notice discrepancies. It's best not to rely on any particular casing when working with headers.
+
+
+
+
+
+
+
+
+As we've covered, HTTP is a text-based protocol, but that doesn't mean it can't send binary data. In fact, HTTP is quite good at sending binary data, and it does so by using the Content-Type header to indicate the type of data being sent. For example, if you're sending an image, you might use Content-Type: image/png, and if you're sending a video, you might use Content-Type: video/mp4.
+
+That way, the client knows how to interpret the body. Rather than reading it as raw text, it can expect a specific format of video data, for example.
+
+Assignment
+The beauty of our current abstraction is that we already have all the tools we need to respond with binary data! Let's add a handler that responds with a video.
+
+Use curl to download this video file:
+mkdir assets
+curl -o assets/vim.mp4 https://storage.googleapis.com/qvault-webapp-dynamic-assets/lesson_videos/vim-vs-neovim-prime.mp4
+
+Add the assets folder to .gitignore, so you don't accidentally commit it.
+
+Add a new handler that responds to the GET /video endpoint with the video file. Use the Content-Type: video/mp4 header. I used os.ReadFile to just read the whole file into memory (probably not the most efficient, but works for our demo).
+Navigate to http://localhost:42069/video in yo

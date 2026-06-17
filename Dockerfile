@@ -23,7 +23,5 @@ WORKDIR /app
 
 COPY --from=builder /app/httpserver .
 
-COPY assets ./assets
-
 # Run the application
 CMD ["./httpserver"]

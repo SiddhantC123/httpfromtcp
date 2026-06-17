@@ -41,6 +41,16 @@ const successHTML = `<html>
   </body>
 </html>`
 
+const naughtyHTML = `<html>
+  <head>
+    <title>👀</title>
+  </head>
+  <body>
+    <h1>Don't be naughty you sneaky!</h1>
+    <p>I know what you're trying to do...</p>
+  </body>
+</html>`
+
 const port = 42069
 
 func main() {
@@ -48,9 +58,26 @@ func main() {
 		target := req.RequestLine.RequestTarget
 		method := req.RequestLine.Method
 
-		if method == "GET" && target == "/video" {
-			videoBytes, err := os.ReadFile(("assets/mohit.mp4"))
+		if target == "/" {
+			headers := response.GetDefaultHeaders(0)
+			headers.Set("Location", "/video")
 
+			w.WriteStatusLine(302)
+			w.WriteHeaders(headers)
+			return nil
+		}
+
+		if method == "GET" && target == "/video" {
+			file, err := os.Open("assets/mohit.mp4")
+			if err != nil {
+				return &server.HandlerError{
+					StatusCode: response.StatusInternalServerError,
+					Message:    internalErrorHTML,
+				}
+			}
+			defer file.Close()
+
+			fileInfo, err := file.Stat()
 			if err != nil {
 				return &server.HandlerError{
 					StatusCode: response.StatusInternalServerError,
@@ -58,8 +85,8 @@ func main() {
 				}
 			}
 
-			videoHeaders := response.GetDefaultHeaders((len(videoBytes)))
-			videoHeaders.Set("Content-Type", "video/mp4")
+			headers := response.GetDefaultHeaders(int(fileInfo.Size()))
+			headers.Set("Content-Type", "video/mp4")
 
 			if err := w.WriteStatusLine(response.StatusOK); err != nil {
 				return &server.HandlerError{
@@ -68,24 +95,24 @@ func main() {
 				}
 			}
 
-			if err := w.WriteHeaders(videoHeaders); err != nil {
+			if err := w.WriteHeaders(headers); err != nil {
 				return &server.HandlerError{
 					StatusCode: response.StatusInternalServerError,
 					Message:    internalErrorHTML,
 				}
 			}
 
-			if _, err := w.WriteBody(videoBytes); err != nil {
+			if _, err := w.WriteFrom(file); err != nil {
 				return &server.HandlerError{
 					StatusCode: response.StatusInternalServerError,
 					Message:    internalErrorHTML,
 				}
 			}
+
 			return nil
-
 		}
 
-		body := successHTML
+		body := naughtyHTML
 		defaultHeaders := response.GetDefaultHeaders(len(body))
 		defaultHeaders.Set("Content-Type", "text/html")
 

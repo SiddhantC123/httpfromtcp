@@ -33,6 +33,14 @@ func NewWriter(w io.Writer) *Writer {
 	}
 }
 
+func (rw *Writer) WriteFrom(r io.Reader) (int64, error) {
+	if rw.state != stateBody {
+		return 0, fmt.Errorf("wrong order: body")
+	}
+
+	return io.Copy(rw.w, r)
+}
+
 func (rw *Writer) WriteStatusLine(statusCode StatusCode) error {
 	if rw.state != stateStatusLine {
 		return fmt.Errorf("wrong order: status line")
